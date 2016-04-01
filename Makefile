@@ -1,37 +1,42 @@
 SOURCEDIR=src
-BINDIR=bin
+LIBSDIR=libs
 BUILDDIR=build
 EXECUTABLE=shadowgl
-OBJECTS=$(patsubst $(SOURCEDIR)/%.c, $(BUILDDIR)/%.o, $(wildcard $(SOURCEDIR)/*.c))
-SOURCES=$(wildcard $(SOURCEDIR)/*.c)
-HEADERS=$(wildcard $(SOURCEDIR)/*.h)
-LIBS=-lglfw3 -framework OpenGL
+SOURCES=$(wildcard $(SOURCEDIR)/**/*.c $(SOURCEDIR)/*.c)
+SOURCES+=$(wildcard $(LIBSDIR)/*/src/*.c $(LIBSDIR)/*/src/**/*.c)
+HEADERS=$(wildcard $(SOURCEDIR)/**/*.h $(SOURCEDIR)/*.h)
+HEADERS+=$(wildcard $(LIBSDIR)/*/include/*.h $(LIBSDIR)/*/include/**/*.h)
+INCLUDEDIRS=$(wildcard $(LIBSDIR)/*/include)
+INCLUDES=$(foreach dir,$(INCLUDEDIRS),-I$(dir))
+OBJECTS=$(patsubst %.c,%.o,$(SOURCES))
 CC=gcc
-CFLAGS=-Wall -g -static -I$(SOURCEDIR)
+CFLAGS=-Wall -g -static $(INCLUDES) $(shell pkg-config --cflags glfw3 luajit)
+LIBS=$(shell pkg-config --libs glfw3 luajit)
 
-ENABLE_LUAJIT?=1
+UNAME=$(shell uname -s)
 
-ifeq ($(ENABLE_LUAJIT), 1)
-	LIBS += -lluajit
-	CFLAGS += -I/usr/local/include/luajit-2.0
-	LDFLAGS += -pagezero_size 10000 -image_base 100000000
+ifeq ($(UNAME),Darwin)
+	LIBS+=-framework OpenGL
+	# This is a special option for linking against LuaJIT on OS X
+	# See <http://luajit.org/install.html> for more info
+	LDFLAGS=-pagezero_size 10000 -image_base 100000000
 else
-	LIBS += -llua
+	LIBS+=-lGL
 endif
 
 .PHONY: default all clean
 
-default: $(BINDIR)/$(EXECUTABLE)
+default: $(BUILDDIR)/$(EXECUTABLE)
 all: default
 
-
-$(BUILDDIR)/%.o: $(SOURCES) $(HEADERS)
-	$(CC) $(CFLAGS) -c $< -o $@
+print-%:
+	@echo $* = $($*)
 
 .PRECIOUS: $(BUILDDIR)/$(EXECUTABLE) $(OBJECTS)
 
-$(BINDIR)/$(EXECUTABLE): $(OBJECTS)
+$(BUILDDIR)/$(EXECUTABLE): $(OBJECTS)
 	$(CC) $(OBJECTS) $(LIBS) $(LDFLAGS) -o $@
 
 clean:
 	-rm -rf $(BUILDDIR)/*
+	-rm -rf $(OBJECTS)

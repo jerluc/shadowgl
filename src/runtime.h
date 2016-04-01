@@ -3,7 +3,7 @@
 #include <lauxlib.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <graphics.h>
+#include "graphics.h"
 
 static int traceback(lua_State *L) {
     lua_getfield(L, LUA_GLOBALSINDEX, "debug");

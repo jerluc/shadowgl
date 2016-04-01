@@ -1,1 +1,4 @@
-bin/shadowgl
+*.o
+*.a
+*.so
+*.dylib

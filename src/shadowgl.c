@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <runtime.h>
+#include "runtime.h"
 
 int main(int argc, char* argv[]) {
     char* filename;

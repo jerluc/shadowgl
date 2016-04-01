@@ -1,3 +1,4 @@
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 
@@ -109,6 +110,11 @@ int do_main(void) {
 
     // Make the window's context current
     glfwMakeContextCurrent(window);
+
+    if(!gladLoadGL()) {
+        printf("Something went wrong!\n");
+        exit(-1);
+    }
 
     // get version info
     const GLubyte* renderer = glGetString(GL_RENDERER);

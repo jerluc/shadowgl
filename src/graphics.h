@@ -1,20 +1,23 @@
+#ifndef GRAPHICS_H
+#define GRAPHICS_H
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 
 const GLchar* vertexSource =
-    "#version 150 core\n"
+    "#version 330\n"
     "in vec2 position;"
     "void main()"
     "{"
     "    gl_Position = vec4(position, 0.0, 1.0);"
     "}";
 const GLchar* fragmentSource =
-    "#version 150 core\n"
-    "out vec4 outColor;"
+    "#version 330\n"
+    "out vec4 fragColor;"
     "void main()"
     "{"
-    "    outColor = vec4(0.5, 0.0, 0.5, 1.0);"
+    "    fragColor = vec4(0.5, 0.0, 0.5, 1.0);"
     "}";
 
 void checkErr(const char* msg) {
@@ -29,28 +32,20 @@ void checkErr(const char* msg) {
 }
 
 
-void createVertexBuffer() {
-    // Create Vertex Array Object
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    checkErr("Gen VAO");
-    glBindVertexArray(vao);
-    checkErr("Bind VAO");
+GLuint createVertexBuffer(float vertices[], int numVertices) {
+
+    for (int i = 0; i < numVertices * 2; i += 2) {
+        printf("(%f, %f)\n", vertices[i], vertices[i+1]);
+    }
 
     // Create a Vertex Buffer Object and copy the vertex data to it
     GLuint vbo;
     glGenBuffers(1, &vbo);
     checkErr("Gen VBO");
 
-    GLfloat vertices[] = {
-         0.0f,  0.5f,
-         0.5f, -0.5f,
-        -0.5f, -0.5f
-    };
-
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     checkErr("Bind VBO");
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * numVertices * 2, vertices, GL_DYNAMIC_DRAW);
     checkErr("VBO data");
 
     // Create and compile the vertex shader
@@ -75,21 +70,49 @@ void createVertexBuffer() {
     glUseProgram(shaderProgram);
     checkErr("Use program");
 
+    // Create Vertex Array Object
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    checkErr("Gen VAO");
+    glBindVertexArray(vao);
+    checkErr("Bind VAO");
+
     // Specify the layout of the vertex data
     GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
     glEnableVertexAttribArray(posAttrib);
     checkErr("Enable vertex attrib");
     glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
     checkErr("Describe vert data");
+
+    return vao;
 }
 
-void draw() {
+
+int createTriangle() {
+    float vertices[] = {
+         0.0f,  0.5f,
+         0.5f, -0.5f,
+        -0.5f, -0.5f
+    };
+    return createVertexBuffer(vertices, 3);
+}
+
+void graphicsDrawShape(int vao, int numVertices) {
+    glBindVertexArray(vao);
+    glDrawArrays(GL_TRIANGLES, 0, numVertices);
+    glBindVertexArray(0);
+}
+
+void predraw() {
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
-int do_main(void) {
+void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+    glViewport(0, 0, width, height);
+}
+
+int graphics_main(void (*game_init)(), void (*game_draw)()) {
     GLFWwindow* window;
 
     // Initialize GLFW
@@ -97,7 +120,7 @@ int do_main(void) {
         return -1;
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
@@ -107,6 +130,8 @@ int do_main(void) {
         glfwTerminate();
         return -1;
     }
+
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     // Make the window's context current
     glfwMakeContextCurrent(window);
@@ -124,12 +149,13 @@ int do_main(void) {
     printf ("OpenGL version: %s\n", version);
     printf ("GLSL version:   %s\n", glslVersion);
 
-    createVertexBuffer();
+    game_init();
 
     // Loop until the user closes the window
     while (!glfwWindowShouldClose(window)) {
         // Do rendering here
-        draw();
+        predraw();
+        game_draw();
 
         // Swap front and back buffers
         glfwSwapBuffers(window);
@@ -141,3 +167,5 @@ int do_main(void) {
     glfwTerminate();
     return 0;
 }
+
+#endif

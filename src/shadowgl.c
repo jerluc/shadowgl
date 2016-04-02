@@ -3,7 +3,7 @@
 
 int main(int argc, char* argv[]) {
     char* filename;
-    
+
     if (argc == 1)
         filename = "main.lua";
     else
